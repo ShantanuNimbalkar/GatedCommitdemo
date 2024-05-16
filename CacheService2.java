@@ -41,8 +41,8 @@ public class CacheService {
     private final UIConfigRepository uiConfigRepository;
     private final CardMasterRepository cardMasterRepository;
 
-    /* ---------------------- Cacheable Data Methods ----------------------*/
-    @Cacheable(value = JUSPAY_PAYMENT_METHODS_CACHE, key = "#companyCode.toString()", sync = true)
+    /* ---------------------- Cacheable Data Methods ---------------------- */
+    @Cacheable(value = JUSPAY_PAYMENT_METHODS_CACHE, key = "#companyCode.toString()", unless = "#result == null")
     public JuspayPaymentMethods getCachedPaymentMethods(Character companyCode) {
         return juspayGateway.getPaymentMethodsFromGateway(companyCode);
     }
@@ -51,16 +51,15 @@ public class CacheService {
     public Map<String, String> getCachedUIConfigValues(String gatewayId) {
         List<PaymentGatewayUIConfig> uiConfigs = uiConfigRepository.findAllByGatewayId(gatewayId);
         return uiConfigs.stream().collect(
-                Collectors.toMap(PaymentGatewayUIConfig::getConfigKey, PaymentGatewayUIConfig::getConfigValue)
-        );
+                Collectors.toMap(PaymentGatewayUIConfig::getConfigKey, PaymentGatewayUIConfig::getConfigValue));
     }
 
-    @Cacheable(value = GATEWAYS_CARD_DETAILS_CACHE, key = "#cardId" ,unless = "#result == null")
+    @Cacheable(value = GATEWAYS_CARD_DETAILS_CACHE, key = "#cardId", unless = "#result == null")
     public CardMaster getCachedCardBinDetails(Integer cardId) {
-    	return cardMasterRepository.findTop1ByCardIdOrderByCreatedTimeDesc(cardId);
+        return cardMasterRepository.findTop1ByCardIdOrderByCreatedTimeDesc(cardId);
     }
 
-    /* ---------------------- Evict Cache Methods ----------------------*/
+    /* ---------------------- Evict Cache Methods ---------------------- */
 
     public void evictAllCaches() {
         cacheManager.getCacheNames().forEach(this::evictCacheByName);
@@ -86,7 +85,7 @@ public class CacheService {
     public String evictCacheEntryByKey(String cacheName, String cacheEntryKey) {
         Cache cache = cacheManager.getCache(cacheName);
 
-        //Validating the cache Object for 'null'.
+        // Validating the cache Object for 'null'.
         if (ObjectUtils.isEmpty(ObjectUtils.isEmpty(cache) ? null : cache.getNativeCache())) {
             return "Key: '" + cacheEntryKey + "' is not present in Cache: '" + cacheName + "' as the Cache is Empty.";
         }
